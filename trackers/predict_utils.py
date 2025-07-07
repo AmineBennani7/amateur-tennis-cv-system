@@ -3,7 +3,7 @@ import argparse
 import os
 import numpy as np
 import tensorflow as tf
-from gridtrack_model import GridTrackNet
+from trackers.gridtrack_model import GridTrackNet
 
 WIDTH = 768
 HEIGHT = 432

@@ -10,7 +10,7 @@ class PlayerTracker:
         :param model_path: path to a YOLOv8 model (e.g., yolov8n.pt or a custom-trained model)
         """
         self.model = YOLO(model_path)
-        self.class_id = 1  # Class ID for "person" or "player" (depends on your training)
+        self.class_id = 0  # Class ID "player" (depends on your training)
 
     def detect_frame(self, frame):
         """
