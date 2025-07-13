@@ -1,3 +1,5 @@
 venv/
 data/videos/
 dataset/
+metrics/tennis_ball_eval_dataset/
+outputs/

@@ -5,8 +5,8 @@ from ultralytics import YOLO
 from trackers.predict_utils import getPredictions
 
 # Paths to input video and output directory
-VIDEO_PATH = "data/videos/Faris Boubekri Vs Manuel Porras.f135.mp4"
-OUTPUT_PATH = "outputs/final_output_fixed_ids.mp4"
+VIDEO_PATH = "data/videos/video2.mp4"
+OUTPUT_PATH = "outputs/final_output_fixed_ids_2.mp4"
 IMGS_PER_INSTANCE = 5  # Number of frames to process together
 
 # Create output folder if it doesn't exist
