@@ -3,3 +3,7 @@ data/videos/
 dataset/
 metrics/tennis_ball_eval_dataset/
 outputs/
+metrics/tennis_players_eval_dataset/
+metrics/mot_metrics/player_metrics/visual_tracking_frames/
+
+

@@ -2,8 +2,8 @@ import motmetrics as mm
 import pandas as pd
 
 # Load GT and predictions
-gt_file = "metrics/mot_metrics/tracking_eval/gt.csv"
-pred_file = "metrics/mot_metrics/tracking_eval/pred.csv"
+gt_file = "metrics/mot_metrics/ball_metrics/tracking_eval/gt.csv"
+pred_file = "metrics/mot_metrics/ball_metrics/tracking_eval/pred.csv"
 
 # Load CSVs
 gt = pd.read_csv(gt_file, header=None, names=['FrameId', 'ObjectId', 'X', 'Y', 'Width', 'Height'])

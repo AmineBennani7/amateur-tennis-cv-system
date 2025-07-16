@@ -7,10 +7,9 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 LABELS_DIR = "metrics/tennis_ball_eval_dataset/labels"
-OUTPUT_CSV = "metrics/mot_metrics/tracking_eval/gt.csv"
+OUTPUT_CSV = "metrics/mot_metrics/ball_metrics/tracking_eval/gt.csv"
 
 
-# Regex para extraer el número de frame: video1_0005_jpg.rf.<hash>.txt → 5
 frame_regex = re.compile(r"video\d+_(\d+)_jpg\.rf\..*\.txt")
 
 with open(OUTPUT_CSV, mode='w', newline='') as csvfile:

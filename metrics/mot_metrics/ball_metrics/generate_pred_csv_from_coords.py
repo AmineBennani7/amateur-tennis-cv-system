@@ -3,11 +3,11 @@ import csv
 import re
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 from trackers.predict_utils import getPredictions
 
 INPUT_FILE = "metrics/predictions/pred_ball_coords.txt"
-OUTPUT_CSV = "metrics/mot_metrics/tracking_eval/pred.csv"
+OUTPUT_CSV = "metrics/mot_metrics/ball_metrics/tracking_eval/pred.csv"
 os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 
 # Expresión regular para extraer el frame_id
