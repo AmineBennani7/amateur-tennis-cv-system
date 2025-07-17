@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 from trackers.predict_utils import getPredictions
+from mini_court.mini_court import MiniCourt
+
 
 # Paths
 VIDEO_PATH = "data/cropped_videos/video1_cropped.mp4"
@@ -24,6 +26,8 @@ frames = []
 original_frames = []
 index = 0
 player_refs = {}
+mini_court_ball_positions = []
+
 
 def get_center(bbox):
     x1, y1, x2, y2 = bbox
@@ -80,7 +84,17 @@ while True:
             )
             r = next(result)
             frame_tracked = frames[i].copy()
+
+            # Create the minicourt
+            mcourt = MiniCourt(frame_tracked)
+            frame_tracked = mcourt.draw_background_rectangle(frame_tracked)
+            frame_tracked = mcourt.draw_court(frame_tracked)
+
+
+
             player_boxes = []
+
+            
 
             if r.boxes is not None:
                 for box in r.boxes:
