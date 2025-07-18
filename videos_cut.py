@@ -1,12 +1,12 @@
 import os
 from moviepy.editor import VideoFileClip
 
-input_path = "data/videos/video2.mp4"
-output_path = "data/cropped_videos/video2_cropped.mp4"
+input_path = "data/videos/video3.mp4"
+output_path = "data/cropped_videos/video3_cropped.mp4"
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-start_time = 48  # start second
-end_time = 58    # end second
+start_time = 50  # start second
+end_time = 59    # end second
 
 clip = VideoFileClip(input_path).subclip(start_time, end_time)
 
