@@ -32,6 +32,8 @@ def detect_players_and_ball(model, frames, original_frames, batch_index, player_
 
         if r.boxes is not None and len(r.boxes) > 0:
             for box in r.boxes:
+                if box.id is None:
+                    continue
                 cls_id = int(box.cls[0])
                 if cls_id != 0:  # class 0 is the player from our robotflow dataset
                     continue

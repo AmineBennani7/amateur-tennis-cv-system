@@ -7,7 +7,6 @@ import pandas as pd
 
 from main_utils.calibration import calibrate_homography, SCALE, REFERENCE_POINTS
 from main_utils.detection import detect_players_and_ball, get_center
-from main_utils.hit_detection import detect_hits
 from main_utils.visualisation import draw_minicourt, apply_homography
 
 # --- Configuration ---
@@ -21,30 +20,17 @@ os.makedirs("calibration", exist_ok=True)
 model = YOLO("model/player_detector.pt")
 
 # --- Role assignment tracking ---
-assigned_roles = {}  # track_id → "A" or "B"
-role_to_track = {}   # "A"/"B" → track_id
+assigned_roles = {}
+role_to_track = {}
 
 def assign_player_roles(current_boxes, H):
-    """
-    Assign consistent logical roles A/B to players across frames.
-
-    Args:
-        current_boxes: dict {track_id: bbox}
-        H: homography matrix
-
-    Returns:
-        dict {logical_id: (track_id, bbox)}
-    """
     global assigned_roles, role_to_track
     roles_output = {}
-
-    # Step 1: Keep existing assignments if track_id is still visible
     for track_id, bbox in current_boxes.items():
         if track_id in assigned_roles:
             role = assigned_roles[track_id]
             roles_output[role] = (track_id, bbox)
 
-    # Step 2: Assign remaining players by X position (left = A)
     remaining = {tid: bbox for tid, bbox in current_boxes.items() if tid not in assigned_roles}
     if len(remaining) > 0:
         projected = []
@@ -56,8 +42,7 @@ def assign_player_roles(current_boxes, H):
             except:
                 continue
 
-        projected.sort(key=lambda x: x[0])  # left to right
-
+        projected.sort(key=lambda x: x[0])
         for proj_x, tid, box in projected:
             if "A" not in roles_output and "A" not in role_to_track:
                 roles_output["A"] = (tid, box)
@@ -68,7 +53,6 @@ def assign_player_roles(current_boxes, H):
                 assigned_roles[tid] = "B"
                 role_to_track["B"] = tid
 
-    # Step 3: Cleanup roles if a track disappeared
     current_ids = set(current_boxes.keys())
     lost_ids = [tid for tid in assigned_roles if tid not in current_ids]
     for tid in lost_ids:
@@ -79,6 +63,47 @@ def assign_player_roles(current_boxes, H):
 
     return roles_output
 
+def detect_hits_by_proximity(player_positions_by_frame, ball_positions_all, H,
+                             distance_threshold=2.0,
+                             cooldown_frames=6,
+                             same_player_cooldown=80):  # Key parameter
+    hits = []
+    last_hit_frame = -cooldown_frames
+    last_hitter = None  # "A" or "B"
+
+    for frame_idx, ball_pos in enumerate(ball_positions_all):
+        if ball_pos[0] <= 0 or ball_pos[1] <= 0:
+            continue
+        try:
+            ball_proj = apply_homography(ball_pos, H)
+        except:
+            continue
+
+        roles = assign_player_roles(player_positions_by_frame.get(frame_idx, {}), H)
+
+        for role, (_, bbox) in roles.items():
+            cx, cy = get_center(bbox)
+            cy -= (cy - bbox[1]) * 0.3  # Approximate torso (racket zone)
+
+            try:
+                player_proj = apply_homography((cx, cy), H)
+            except:
+                continue
+
+            distance = np.linalg.norm(np.array(ball_proj) - np.array(player_proj))
+
+            # Skip if same player tries to hit again too soon
+            if role == last_hitter and (frame_idx - last_hit_frame) < same_player_cooldown:
+                continue
+
+            if distance < distance_threshold and (frame_idx - last_hit_frame) >= cooldown_frames:
+                hits.append(frame_idx)
+                last_hit_frame = frame_idx
+                last_hitter = role
+                print(f"Hit at frame {frame_idx} — by player {role} — distance: {distance:.2f} m")
+                break
+
+    return hits
 
 # --- Calibrate homography ---
 print("Calibrating homography... Select the 4 court corners in the window.")
@@ -127,9 +152,9 @@ while True:
 
 cap.release()
 
-# --- Step 2: Detect hits based on ball Y positions ---
-print("\nDetecting hits in ball Y position signal...")
-final_hits_filtered = detect_hits(ball_positions_all)
+# --- Step 2: Detect hits by proximity ---
+print("\nDetecting hits based on ball-player proximity...")
+final_hits_filtered = detect_hits_by_proximity(player_positions_by_frame, ball_positions_all, H)
 print(f"Hits detected at frames: {final_hits_filtered}")
 
 # --- Step 3: Draw final video with overlay ---
@@ -144,33 +169,27 @@ while True:
     if not ret:
         break
 
-    # Assign roles for current frame
     roles = assign_player_roles(player_positions_by_frame.get(frame_number, {}), H)
     trackid_to_role = {tid: role for role, (tid, _) in roles.items()}
 
-    # Draw players with consistent logical roles
     if frame_number in player_positions_by_frame:
         for track_id, bbox in player_positions_by_frame[frame_number].items():
             x1, y1, x2, y2 = bbox
             role = trackid_to_role.get(track_id, "")
             if role == "":
                 continue
-
             color = (255, 0, 0) if role == "A" else (0, 0, 255)
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
             cv2.putText(frame, role, (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
-    # Draw ball
     if frame_number < len(ball_positions_all):
         x, y = ball_positions_all[frame_number]
         if x > 0 and y > 0:
             cv2.circle(frame, (x, y), 6, (0, 0, 255), 3)
 
-    # Draw minimap background
     frame[mini_map_y:mini_map_y + mini_map_h, mini_map_x:mini_map_x + mini_map_w] = mini_court_img.copy()
 
-    # Draw players on minimap
     for role, (track_id, bbox) in roles.items():
         cx, cy = get_center(bbox)
         try:
@@ -186,7 +205,6 @@ while True:
         except:
             pass
 
-    # Draw ball on minimap
     if frame_number < len(ball_positions_all):
         x, y = ball_positions_all[frame_number]
         if x > 0 and y > 0:
@@ -207,17 +225,14 @@ while True:
             except:
                 pass
 
-    # Progress bar
     bar_w = frame_width - 40
     filled = int(bar_w * (frame_number / total_frames))
     cv2.rectangle(frame, (20, frame_height - 30), (20 + bar_w, frame_height - 20), (100, 100, 100), -1)
     cv2.rectangle(frame, (20, frame_height - 30), (20 + filled, frame_height - 20), (0, 255, 0), -1)
 
-    # Frame number
     cv2.putText(frame, f"Frame: {frame_number}", (30, 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
-    # Hit counter
     while hit_index < len(final_hits_filtered) and frame_number >= final_hits_filtered[hit_index]:
         hit_count += 1
         hit_index += 1
@@ -232,4 +247,4 @@ video_writer.release()
 cv2.destroyAllWindows()
 os.remove("calibration/homography_matrix.npy")
 
-print(f"✅ Final video saved at: {OUTPUT_PATH}")
+print(f" Final video saved at: {OUTPUT_PATH}")
