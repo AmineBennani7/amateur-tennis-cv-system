@@ -66,14 +66,17 @@ def assign_player_roles(current_boxes, H):
 def detect_hits_by_proximity(player_positions_by_frame, ball_positions_all, H,
                              distance_threshold=2.0,
                              cooldown_frames=6,
-                             same_player_cooldown=80):  # Key new parameter
+                             same_player_cooldown=80):
     hits = []
+    hit_roles = []
+
     last_hit_frame = -cooldown_frames
-    last_hitter = None  # "A" or "B"
+    last_hitter = None
 
     for frame_idx, ball_pos in enumerate(ball_positions_all):
         if ball_pos[0] <= 0 or ball_pos[1] <= 0:
             continue
+
         try:
             ball_proj = apply_homography(ball_pos, H)
         except:
@@ -81,9 +84,11 @@ def detect_hits_by_proximity(player_positions_by_frame, ball_positions_all, H,
 
         roles = assign_player_roles(player_positions_by_frame.get(frame_idx, {}), H)
 
+        detected = False  # Evita múltiples detecciones por frame
+
         for role, (_, bbox) in roles.items():
             cx, cy = get_center(bbox)
-            cy -= (cy - bbox[1]) * 0.3  # Approximate racket/torso position
+            cy -= (cy - bbox[1]) * 0.3  # torso/racket approx
 
             try:
                 player_proj = apply_homography((cx, cy), H)
@@ -92,19 +97,24 @@ def detect_hits_by_proximity(player_positions_by_frame, ball_positions_all, H,
 
             distance = np.linalg.norm(np.array(ball_proj) - np.array(player_proj))
 
-            # Ignore if same player attempts to hit again too soon
+            # Ignore if same player hit too recently
             if role == last_hitter and (frame_idx - last_hit_frame) < same_player_cooldown:
                 continue
 
-            # Apply general cooldown for all players
             if distance < distance_threshold and (frame_idx - last_hit_frame) >= cooldown_frames:
                 hits.append(frame_idx)
+                hit_roles.append(role)  # solo aquí
                 last_hit_frame = frame_idx
                 last_hitter = role
                 print(f"✔️ Hit at frame {frame_idx} — by player {role} — distance: {distance:.2f} m")
                 break
 
-    return hits
+
+        if detected:
+            continue
+
+    return hits, hit_roles
+
 
 # --- Calibrate homography ---
 print("Calibrating homography... Select the 4 court corners in the window.")
@@ -155,14 +165,26 @@ cap.release()
 
 # --- Step 2: Detect hits by proximity ---
 print("\nDetecting hits based on ball-player proximity...")
-final_hits_filtered = detect_hits_by_proximity(player_positions_by_frame, ball_positions_all, H)
+final_hits_filtered, hit_roles = detect_hits_by_proximity(
+    player_positions_by_frame,
+    ball_positions_all,
+    H
+)
 print(f"Hits detected at frames: {final_hits_filtered}")
+hit_map = dict(zip(final_hits_filtered, hit_roles))
+from collections import Counter
+role_counts = Counter(hit_roles)
+print(f"Hits per player: A = {role_counts.get('A', 0)} | B = {role_counts.get('B', 0)}")
+
 
 # --- Step 3: Draw final video with overlay ---
 cap = cv2.VideoCapture(VIDEO_PATH)
 frame_number = 0
 hit_index = 0
 hit_count = 0
+hit_count_A = 0
+hit_count_B = 0
+
 
 print("Generating final video with detections and hit count...")
 while True:
@@ -235,10 +257,24 @@ while True:
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
     while hit_index < len(final_hits_filtered) and frame_number >= final_hits_filtered[hit_index]:
+        role = hit_map.get(final_hits_filtered[hit_index])
+        if role == "A":
+            hit_count_A += 1
+        elif role == "B":
+            hit_count_B += 1
         hit_count += 1
         hit_index += 1
+
     cv2.putText(frame, f"Hits detected: {hit_count}", (20, 60),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+
+    # Shows who hit the ball
+    cv2.putText(frame, f"Player A: {hit_count_A}", (20, 100),
+            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+    cv2.putText(frame, f"Player B: {hit_count_B}", (20, 140),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+
 
     video_writer.write(frame)
     frame_number += 1
