@@ -66,7 +66,7 @@ def assign_player_roles(current_boxes, H):
 def detect_hits_by_proximity(player_positions_by_frame, ball_positions_all, H,
                              distance_threshold=2.0,
                              cooldown_frames=6,
-                             same_player_cooldown=80):  # Key parameter
+                             same_player_cooldown=80):  # Key new parameter
     hits = []
     last_hit_frame = -cooldown_frames
     last_hitter = None  # "A" or "B"
@@ -83,7 +83,7 @@ def detect_hits_by_proximity(player_positions_by_frame, ball_positions_all, H,
 
         for role, (_, bbox) in roles.items():
             cx, cy = get_center(bbox)
-            cy -= (cy - bbox[1]) * 0.3  # Approximate torso (racket zone)
+            cy -= (cy - bbox[1]) * 0.3  # Approximate racket/torso position
 
             try:
                 player_proj = apply_homography((cx, cy), H)
@@ -92,15 +92,16 @@ def detect_hits_by_proximity(player_positions_by_frame, ball_positions_all, H,
 
             distance = np.linalg.norm(np.array(ball_proj) - np.array(player_proj))
 
-            # Skip if same player tries to hit again too soon
+            # Ignore if same player attempts to hit again too soon
             if role == last_hitter and (frame_idx - last_hit_frame) < same_player_cooldown:
                 continue
 
+            # Apply general cooldown for all players
             if distance < distance_threshold and (frame_idx - last_hit_frame) >= cooldown_frames:
                 hits.append(frame_idx)
                 last_hit_frame = frame_idx
                 last_hitter = role
-                print(f"Hit at frame {frame_idx} — by player {role} — distance: {distance:.2f} m")
+                print(f"✔️ Hit at frame {frame_idx} — by player {role} — distance: {distance:.2f} m")
                 break
 
     return hits
@@ -247,4 +248,4 @@ video_writer.release()
 cv2.destroyAllWindows()
 os.remove("calibration/homography_matrix.npy")
 
-print(f" Final video saved at: {OUTPUT_PATH}")
+print(f"✅ Final video saved at: {OUTPUT_PATH}")
