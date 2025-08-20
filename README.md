@@ -49,7 +49,28 @@ cd amateur-tennis-cv-system
 conda env create -f environment.yml
 
 # Activate it
-conda activate tfgpu   # or the environment name specified in environment.yml
+conda activate tennis-cv
+```
+
+⚡ **Note on GPU**  
+The provided `environment.yml` installs the **CPU version** of PyTorch by default.  
+If you have an NVIDIA GPU, please follow the official PyTorch installation instructions to install the CUDA-enabled build.
+
+Example (for CUDA 12.1):
+
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
+### Verify Installation
+Run the following quick tests to make sure the environment is working:
+
+```bash
+# Test YOLOv8 detection on a sample image
+python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')(source='https://ultralytics.com/images/bus.jpg')"
+
+# Test TensorFlow / GridTrackNet
+python -c "import tensorflow as tf; print('TF version:', tf.__version__)"
 ```
 
 ---
