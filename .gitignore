@@ -1,9 +1,46 @@
+# Virtual environments
 venv/
+.venv/
+env/
+
+# Compiled/cache
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# IDE/editor
+.vscode/
+
+# Data and outputs
 data/videos/
+data/cropped_videos/
 dataset/
-metrics/tennis_ball_eval_dataset/
 outputs/
+metrics/tennis_ball_eval_dataset/
 metrics/tennis_players_eval_dataset/
 metrics/mot_metrics/player_metrics/visual_tracking_frames/
+runs/
+logs/
 
+# Videos (anywhere)
+*.mp4
+*.avi
+*.mov
+*.mkv
 
+# Models/weights
+*.pt
+*.pth
+*.h5
+*.onnx
+*.pb
+*.tflite
+*.ckpt
+
+# Build/packages
+build/
+dist/
+*.spec
+*.zip
+*.pkg
+*.toc
