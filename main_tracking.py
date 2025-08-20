@@ -10,8 +10,8 @@ from main_utils.detection import detect_players_and_ball, get_center
 from main_utils.visualisation import draw_minicourt, apply_homography
 
 # --- Configuration ---
-VIDEO_PATH = "data/cropped_videos/video3_cropped.mp4"
-OUTPUT_PATH = "outputs/video3_cropped_with_features_hits.mp4"
+VIDEO_PATH = "data/cropped_videos/video5.webm_cut2.mp4"
+OUTPUT_PATH = "outputs/video5_cut2.mp4"
 IMGS_PER_BATCH = 5
 
 os.makedirs("outputs", exist_ok=True)
@@ -106,7 +106,7 @@ def detect_hits_by_proximity(player_positions_by_frame, ball_positions_all, H,
                 hit_roles.append(role)  # solo aquí
                 last_hit_frame = frame_idx
                 last_hitter = role
-                print(f"✔️ Hit at frame {frame_idx} — by player {role} — distance: {distance:.2f} m")
+                print(f"Hit at frame {frame_idx} — by player {role} — distance: {distance:.2f} m")
                 break
 
 
@@ -284,4 +284,4 @@ video_writer.release()
 cv2.destroyAllWindows()
 os.remove("calibration/homography_matrix.npy")
 
-print(f"✅ Final video saved at: {OUTPUT_PATH}")
+print(f"Final video saved at: {OUTPUT_PATH}")
